@@ -1,0 +1,13 @@
+' Reference the "CONCILIACION TERCEROS" sheet
+Dim wsConciliacionTerceros As Worksheet
+Set wsConciliacionTerceros = destWorkbook.Sheets("CONCILIACION TERCEROS")
+
+' Find the last row in Indeval vs OPICS
+With wsIndevalOpics
+    lastRowIndevalOpics = .Cells(.Rows.Count, "A").End(xlUp).Row
+    
+    ' Concatenate columns B, C, and D from "Indeval vs OPICS" and place result in "CONCILIACION TERCEROS" starting at B3
+    wsConciliacionTerceros.Range("B3:B" & 2 + lastRowIndevalOpics - 1).Formula = _
+        "=IF('" & wsIndevalOpics.Name & "'!A2="""","""",'" & wsIndevalOpics.Name & "'!B2 & "" "" & '" & wsIndevalOpics.Name & "'!C2 & "" "" & '" & wsIndevalOpics.Name & "'!D2)"
+    wsConciliacionTerceros.Range("B3:B" & 2 + lastRowIndevalOpics - 1).FillDown
+End With
