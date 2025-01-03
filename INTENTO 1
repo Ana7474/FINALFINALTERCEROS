@@ -1,0 +1,168 @@
+Sub ValidateNew()
+    Dim fileDialog As fileDialog
+    Dim response As VbMsgBoxResult
+    Dim sourceWorkbook As Workbook, secondWorkbook As Workbook
+    Dim sourceSheet As Worksheet, secondSheet As Worksheet
+    Dim lastRow As Long, lastRowSecond As Long, lastRowQueryTerceros As Long, lastRowIndevalOpics As Long, lastRowP As Long, lastRowV As Long
+    Dim destWorkbook As Workbook
+    Dim wsQueryTerceros As Worksheet
+    Dim wsIndevalOpics As Worksheet
+    Dim i As Long
+
+    ' Prompt user to select the first file
+    response = MsgBox("Seleccione el archivo de Consulta de Posiciones.", vbOKCancel + vbInformation, "Seleccionar Archivo")
+    If response = vbCancel Then Exit Sub ' User canceled the operation
+    Set fileDialog = Application.fileDialog(msoFileDialogFilePicker)
+    With fileDialog
+        .Title = "Seleccione el archivo de Consulta de Posiciones"
+        .AllowMultiSelect = False
+        .Filters.Add "Excel Files", "*.xls; *.xlsx; *.xlsm"
+        If .Show <> -1 Then Exit Sub ' User canceled at file picker
+    End With
+    Set sourceWorkbook = Workbooks.Open(fileDialog.SelectedItems(1))
+    Set sourceSheet = sourceWorkbook.Sheets(1)
+
+    ' Set references to the destination workbook and sheets
+    Set destWorkbook = ThisWorkbook
+    Set wsIndevalOpics = destWorkbook.Sheets("Indeval vs OPICS")
+    Set wsQueryTerceros = destWorkbook.Sheets("Query Terceros")
+
+    ' Process the selected file directly into "Indeval vs OPICS"
+    lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, "A").End(xlUp).Row
+    With sourceSheet
+        .Range("A12:L" & lastRow).AutoFilter Field:=1, Criteria1:="<>SUBTOTAL", Operator:=xlAnd, Criteria2:="<>TOTAL"
+        .Range("A12:L" & lastRow).SpecialCells(xlCellTypeVisible).Copy wsIndevalOpics.Range("A1")
+    End With
+    wsIndevalOpics.Columns("A:L").AutoFit
+    sourceWorkbook.Close SaveChanges:=False
+
+    ' Prompt user to select the second file for "Query Terceros"
+    response = MsgBox("Seleccione el archivo para 'Query Terceros'.", vbOKCancel + vbInformation, "Seleccionar Archivo")
+    If response = vbCancel Then Exit Sub ' User canceled the operation
+
+    With fileDialog
+        .Title = "Seleccione el archivo para 'Query Terceros'"
+        .Filters.Clear
+        .Filters.Add "PRN Files", "*.prn"
+        If .Show <> -1 Then Exit Sub ' User canceled at file picker
+    End With
+
+    ' Open the PRN file as comma delimited
+    Dim prnPath As String
+    prnPath = fileDialog.SelectedItems(1)
+    Application.Workbooks.OpenText Filename:=prnPath, Origin:=xlMSDOS, StartRow:=1, DataType:=xlDelimited, TextQualifier:=xlDoubleQuote, _
+        Comma:=True, Semicolon:=False, Space:=False, Other:=False, FieldInfo:=Array( _
+        Array(1, 2), Array(2, 2), Array(3, 2), Array(4, 2), Array(5, 2), _
+        Array(6, 2), Array(7, 2), Array(8, 2), Array(9, 2), Array(10, 2), _
+        Array(11, 2), Array(12, 2), Array(13, 2), Array(14, 2), Array(15, 2), _
+        Array(16, 2), Array(17, 2), Array(18, 2))
+
+    ' Set references to the workbooks and sheets
+    Set secondWorkbook = Application.ActiveWorkbook
+    Set secondSheet = secondWorkbook.Sheets(1) ' The data from PRN should now be in the first sheet
+
+    ' Determine the last row with data in the PRN sheet
+    lastRowSecond = secondSheet.Cells(secondSheet.Rows.Count, "A").End(xlUp).Row
+
+    ' Copy data from the PRN file to "Query Terceros", starting from row 2
+    If lastRowSecond >= 1 Then ' Check if there is data
+        secondSheet.Range("A1:R" & lastRowSecond).Copy
+        wsQueryTerceros.Range("A2").PasteSpecial Paste:=xlPasteValues
+        Application.CutCopyMode = False ' Clear clipboard after pasting
+    End If
+    secondWorkbook.Close SaveChanges:=False
+
+    ' Delete rows ending with 6720 in column A in "Indeval vs OPICS"
+    With wsIndevalOpics
+        .AutoFilterMode = False ' Clear any existing filters
+        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+        For i = lastRow To 1 Step -1 ' Loop from bottom to top to handle deletions correctly
+            If .Cells(i, "A").Value Like "*6720" Then
+                .Rows(i).Delete
+            End If
+        Next i
+    End With
+
+    ' Delete specific series from "Query Terceros" based on column "O" (header "contrato")
+    Dim deleteSeries1 As Variant, deleteSeries2 As Variant, deleteSeries3 As Variant, deleteSeries4 As Variant
+
+    deleteSeries1 = Array(82501126351#, 82501112535#, 82501095367#, 82501090663#, 82501089820#, 82501089604#, 82501081338#, 82501035631#, 82501010628#, 82500996967#, _
+                         82500674805#, 82500674793#, 82500894128#, 82500943526#, 82500926655#, 82500827909#, 82500816037#, 82501122792#, 82501073363#, 82501065948#, _
+                         82501054230#, 82501051018#, 82501046326#, 82501012555#, 82500996970#, 82500962949#, 82500956975#, 82500956913#, 82500945743#, 82500816085#, _
+                         82500816071#, 82501163975#, 82501131870#, 82501083876#, 82501015841#, 82500843958#, 82501123156#, 82501120359#, 82501120194#, 82501078556#, _
+                         82501072704#, 82500881415#, 82500951015#, 82500950986#, 82500926564#, 82500923983#, 82500824825#, 82501149287#, 82500922758#, 82500221978#)
+
+    deleteSeries2 = Array(82501126348#, 82501123173#, 82501116190#, 82501088688#, 82501073883#, 82501065783#, 82501012723#, 82500895839#, 82500894100#, 82500945544#, _
+                         82500941772#, 82500819232#, 82500819201#, 82500815946#, 82500951245#, 82501144200#, 82501142028#, 82501131836#, 82501120345#, 82501120300#, _
+                         82501108195#, 82501102067#, 82501065979#, 82501035719#, 82501011074#, 82500674776#, 82500943850#, 82500926610#, 82500824873#, 82501138163#, _
+                         82501019917#, 82501122818#, 82501120177#, 82501089589#, 82501088674#, 82501073102#, 82501065797#, 82501033110#, 82501004486#, 82500674685#)
+
+    deleteSeries3 = Array(82500956930#, 82500827727#, 82500824808#, 82500824691#, 82501062708#, 82500803125#, 82501120240#, 82501085189#, 82501084823#, 82501081310#, _
+                         82501075117#, 82501073897#, 82501073377#, 82501053968#, 82501007877#, 82500988486#, 82500705911#, 82500945791#, 82500926641#, 82500843961#, _
+                         82500824890#, 82500819797#, 82500805922#, 82501163927#, 82500951199#, 82500923142#, 82501150040#, 82501132569#, 82501123202#, 82501123125#, _
+                         82501102036#, 82501100203#, 82501093093#, 82501088691#, 82501075728#, 82501073909#, 82501025561#, 82501015977#, 82501007829#, 82500988515#)
+
+    deleteSeries4 = Array(82500881494#, 82500923784#, 82500815980#, 82500815963#, 82500800726#, 82501166357#, 82501164097#, 82501123233#, 82500955295#)
+
+    With wsQueryTerceros
+        lastRowQueryTerceros = .Cells(.Rows.Count, "O").End(xlUp).Row
+        For i = lastRowQueryTerceros To 2 Step -1 ' Loop from bottom to top to handle deletions correctly
+            If Not IsError(Application.Match(.Cells(i, "O").Value, deleteSeries1, 0)) Or _
+               Not IsError(Application.Match(.Cells(i, "O").Value, deleteSeries2, 0)) Or _
+               Not IsError(Application.Match(.Cells(i, "O").Value, deleteSeries3, 0)) Or _
+               Not IsError(Application.Match(.Cells(i, "O").Value, deleteSeries4, 0)) Then
+                .Rows(i).Delete
+            End If
+        Next i
+    End With
+
+    ' Additional processing in "Query Terceros"
+    lastRowQueryTerceros = wsQueryTerceros.Cells(wsQueryTerceros.Rows.Count, "A").End(xlUp).Row
+    For i = 2 To lastRowQueryTerceros
+        wsQueryTerceros.Cells(i, "S").Value = Trim(wsQueryTerceros.Cells(i, "D").Value) & " " & Trim(wsQueryTerceros.Cells(i, "E").Value) & " " & Trim(wsQueryTerceros.Cells(i, "F").Value)
+        ' Sum values from columns J, K, L, M, and N and place the result in column T
+        wsQueryTerceros.Cells(i, "T").Value = Application.WorksheetFunction.Sum(wsQueryTerceros.Cells(i, "J").Value, wsQueryTerceros.Cells(i, "K").Value, wsQueryTerceros.Cells(i, "L").Value, wsQueryTerceros.Cells(i, "M").Value, wsQueryTerceros.Cells(i, "N").Value)
+    Next i
+
+    wsQueryTerceros.Range("V2:V" & lastRowQueryTerceros).Formula = "=IF(A2="""","""",S2)"
+    wsQueryTerceros.Range("V2:V" & lastRowQueryTerceros).Copy
+    wsQueryTerceros.Range("V2").PasteSpecial Paste:=xlPasteValues
+    wsQueryTerceros.Range("V2:V" & lastRowQueryTerceros).RemoveDuplicates Columns:=1, Header:=xlNo
+    lastRowV = wsQueryTerceros.Cells(wsQueryTerceros.Rows.Count, "V").End(xlUp).Row
+    For i = 2 To lastRowV
+        wsQueryTerceros.Cells(i, "W").Formula = "=SUMIF($S$2:$S$" & lastRowQueryTerceros & ",V" & i & ",$T$2:$T$" & lastRowQueryTerceros & ")"
+    Next i
+
+    ' Final compilation and formatting in "Indeval vs OPICS"
+
+
+
+  With wsIndevalOpics
+      ' Copy column E to column B as values (instead of P)
+      .Range("E2:E" & lastRowIndevalOpics).Copy
+      .Range("B2").PasteSpecial Paste:=xlPasteValues
+      Application.CutCopyMode = False ' Clears the clipboard to clean up after paste operations
+  
+      ' Remove duplicates from column B (instead of P)
+      .Range("B2:B" & lastRowIndevalOpics).RemoveDuplicates Columns:=1, Header:=xlNo
+  
+      ' Determine the last used row in column B after removing duplicates (instead of P)
+      lastRowP = .Cells(.Rows.Count, "B").End(xlUp).Row
+  
+      ' Sum values in column I based on matching criteria in columns B and E (instead of P and E)
+      For i = 2 To lastRowIndevalOpics
+          .Cells(i, "C").Formula = "=SUMIF(E:E, B" & i & ", I:I)" ' Output in column C (instead of Q)
+      Next i
+  
+      ' Lookup and retrieve values from "Query Terceros" in column D (instead of R)
+      For i = 2 To lastRowP
+          .Cells(i, "D").Formula = "=IFERROR(INDEX('Query Terceros'!$W:$W, MATCH(B" & i & ", 'Query Terceros'!$V:$V, 0)), ""No Match"")"
+      Next i
+  End With
+
+
+    
+    Application.CutCopyMode = False ' Clears the clipboard to clean up after paste operations
+
+    MsgBox "Macro completed successfully!", vbInformation, "Process Finished"
+End Sub
