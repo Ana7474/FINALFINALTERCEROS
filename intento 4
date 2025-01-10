@@ -1,0 +1,119 @@
+Sub ValidateNew()
+    Dim fileDialog As FileDialog
+    Dim response As VbMsgBoxResult
+    Dim sourceWorkbook As Workbook, secondWorkbook As Workbook
+    Dim sourceSheet As Worksheet, secondSheet As Worksheet
+    Dim lastRow As Long, lastRowSecond As Long, lastRowQueryTerceros As Long, lastRowIndevalOpics As Long, lastRowP As Long, lastRowV As Long
+    Dim destWorkbook As Workbook
+    Dim wsQueryTerceros As Worksheet
+    Dim wsIndevalOpics As Worksheet
+    Dim wsConciliacionTerceros As Worksheet
+    Dim i As Long
+
+    ' Prompt user to select the first file
+    response = MsgBox("Seleccione el archivo de Consulta de Posiciones.", vbOKCancel + vbInformation, "Seleccionar Archivo")
+    If response = vbCancel Then Exit Sub ' User canceled the operation
+    Set fileDialog = Application.FileDialog(msoFileDialogFilePicker)
+    With fileDialog
+        .Title = "Seleccione el archivo de Consulta de Posiciones"
+        .AllowMultiSelect = False
+        .Filters.Add "Excel Files", "*.xls; *.xlsx; *.xlsm"
+        If .Show <> -1 Then Exit Sub ' User canceled at file picker
+    End With
+    Set sourceWorkbook = Workbooks.Open(fileDialog.SelectedItems(1))
+    Set sourceSheet = sourceWorkbook.Sheets(1)
+
+    ' Set references to the destination workbook and sheets
+    Set destWorkbook = ThisWorkbook
+    Set wsIndevalOpics = destWorkbook.Sheets("Indeval vs OPICS")
+    Set wsQueryTerceros = destWorkbook.Sheets("Query Terceros")
+    Set wsConciliacionTerceros = destWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+
+    ' Process the selected file directly into "Indeval vs OPICS"
+    lastRow = sourceSheet.Cells(sourceSheet.Rows.Count, "A").End(xlUp).Row
+    With sourceSheet
+        .Range("A12:L" & lastRow).AutoFilter Field:=1, Criteria1:="<>SUBTOTAL", Operator:=xlAnd, Criteria2:="<>TOTAL"
+        .Range("A12:L" & lastRow).SpecialCells(xlCellTypeVisible).Copy wsIndevalOpics.Range("A1")
+    End With
+    wsIndevalOpics.Columns("A:L").AutoFit
+    sourceWorkbook.Close SaveChanges:=False
+
+    ' Prompt user to select the second file for "Query Terceros"
+    response = MsgBox("Seleccione el archivo para 'Query Terceros'.", vbOKCancel + vbInformation, "Seleccionar Archivo")
+    If response = vbCancel Then Exit Sub ' User canceled the operation
+
+    With fileDialog
+        .Title = "Seleccione el archivo para 'Query Terceros'"
+        .Filters.Clear
+        .Filters.Add "PRN Files", "*.prn"
+        If .Show <> -1 Then Exit Sub ' User canceled at file picker
+    End With
+
+    ' Open the PRN file as comma delimited
+    Dim prnPath As String
+    prnPath = fileDialog.SelectedItems(1)
+    Application.Workbooks.OpenText Filename:=prnPath, Origin:=xlMSDOS, StartRow:=1, DataType:=xlDelimited, TextQualifier:=xlDoubleQuote, _
+        Comma:=True, Semicolon:=False, Space:=False, Other:=False, FieldInfo:=Array( _
+        Array(1, 2), Array(2, 2), Array(3, 2), Array(4, 2), Array(5, 2), _
+        Array(6, 2), Array(7, 2), Array(8, 2), Array(9, 2), Array(10, 2), _
+        Array(11, 2), Array(12, 2), Array(13, 2), Array(14, 2), Array(15, 2), _
+        Array(16, 2), Array(17, 2), Array(18, 2))
+
+    ' Set references to the workbooks and sheets
+    Set secondWorkbook = Application.ActiveWorkbook
+    Set secondSheet = secondWorkbook.Sheets(1) ' The data from PRN should now be in the first sheet
+
+    ' Determine the last row with data in the PRN sheet
+    lastRowSecond = secondSheet.Cells(secondSheet.Rows.Count, "A").End(xlUp).Row
+
+    ' Copy data from the PRN file to "Query Terceros", starting from row 2
+    If lastRowSecond >= 1 Then ' Check if there is data
+        secondSheet.Range("A1:R" & lastRowSecond).Copy
+        wsQueryTerceros.Range("A2").PasteSpecial Paste:=xlPasteValues
+        Application.CutCopyMode = False ' Clear clipboard after pasting
+    End If
+    secondWorkbook.Close SaveChanges:=False
+
+    ' Delete rows ending with 6720 in column A in "Indeval vs OPICS"
+    With wsIndevalOpics
+        .AutoFilterMode = False ' Clear any existing filters
+        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+        For i = lastRow To 1 Step -1 ' Loop from bottom to top to handle deletions correctly
+            If .Cells(i, "A").Value Like "*6720" Then
+                .Rows(i).Delete
+            End If
+        Next i
+    End With
+
+    ' Additional processing in "Query Terceros"
+    lastRowQueryTerceros = wsQueryTerceros.Cells(wsQueryTerceros.Rows.Count, "A").End(xlUp).Row
+    For i = 2 To lastRowQueryTerceros
+        wsQueryTerceros.Cells(i, "S").Value = Trim(wsQueryTerceros.Cells(i, "D").Value) & " " & Trim(wsQueryTerceros.Cells(i, "E").Value) & " " & Trim(wsQueryTerceros.Cells(i, "F").Value)
+        wsQueryTerceros.Cells(i, "T").Value = Application.WorksheetFunction.Sum(wsQueryTerceros.Cells(i, "J").Value, wsQueryTerceros.Cells(i, "K").Value, wsQueryTerceros.Cells(i, "L").Value, wsQueryTerceros.Cells(i, "M").Value, wsQueryTerceros.Cells(i, "N").Value)
+    Next i
+
+    wsQueryTerceros.Range("V2:V" & lastRowQueryTerceros).Formula = "=IF(A2="""","""",S2)"
+    wsQueryTerceros.Range("V2:V" & lastRowQueryTerceros).Copy
+    wsQueryTerceros.Range("V2").PasteSpecial Paste:=xlPasteValues
+    wsQueryTerceros.Range("V2:V" & lastRowQueryTerceros).RemoveDuplicates Columns:=1, Header:=xlNo
+    lastRowV = wsQueryTerceros.Cells(wsQueryTerceros.Rows.Count, "V").End(xlUp).Row
+    For i = 2 To lastRowV
+        wsQueryTerceros.Cells(i, "W").Formula = "=SUMIF($S$2:$S$" & lastRowQueryTerceros & ",V" & i & ",$T$2:$T$" & lastRowQueryTerceros & ")"
+    Next i
+
+    ' Final compilation and formatting in "CONCILIACIÓN TERCEROS"
+    With wsConciliacionTerceros
+        wsIndevalOpics.Range("E2:E" & wsIndevalOpics.Cells(wsIndevalOpics.Rows.Count, "E").End(xlUp).Row).Copy
+        .Range("B2").PasteSpecial Paste:=xlPasteValues
+
+        .Range("B2:B" & .Cells(.Rows.Count, "B").End(xlUp).Row).RemoveDuplicates Columns:=1, Header:=xlNo
+        lastRowP = .Cells(.Rows.Count, "B").End(xlUp).Row
+
+        For i = 2 To lastRowP
+            .Cells(i, "C").Formula = "=SUMIF('Indeval vs OPICS'!E:E, B" & i & ", 'Indeval vs OPICS'!I:I)"
+            .Cells(i, "D").Formula = "=IFERROR(INDEX('Query Terceros'!$W:$W, MATCH(B" & i & ", 'Query Terceros'!$V:$V, 0)), ""No Match"")"
+        Next i
+    End With
+
+    MsgBox "Macro completed successfully!", vbInformation, "Process Finished"
+End Sub
