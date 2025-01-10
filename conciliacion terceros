@@ -1,0 +1,36 @@
+    ' Final compilation and formatting in "Indeval vs OPICS"
+    With wsIndevalOpics
+        .Columns("E:E").Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+        lastRowIndevalOpics = .Cells(.Rows.Count, "A").End(xlUp).Row
+        .Range("E2:E" & lastRowIndevalOpics).Formula = "=IF(A2="""","""",B2 & "" "" & C2 & "" "" & D2)"
+        .Range("E2:E" & lastRowIndevalOpics).FillDown
+        .Range("N2:N" & lastRowIndevalOpics).Formula = "=IFERROR(INDEX('Query Terceros'!$W:$W, MATCH(E2, 'Query Terceros'!$V:$V, 0)), ""No Match"")"
+        
+        ' Copy column E to column P as values
+        .Range("E2:E" & lastRowIndevalOpics).Copy
+        .Range("P2").PasteSpecial Paste:=xlPasteValues
+        Application.CutCopyMode = False ' Clears the clipboard to clean up after paste operations
+        
+        ' Remove duplicates from column P
+        .Range("P2:P" & lastRowIndevalOpics).RemoveDuplicates Columns:=1, Header:=xlNo
+
+        ' Determine the last used row in column P after removing duplicates
+        lastRowP = .Cells(.Rows.Count, "P").End(xlUp).Row
+
+        ' Sum values in column I based on matching criteria in columns P and E
+        For i = 2 To lastRowIndevalOpics
+            .Cells(i, "Q").Formula = "=SUMIF(E:E, P" & i & ", I:I)"
+        Next i
+        
+        ' Lookup and retrieve values from "Query Terceros" in column R
+        For i = 2 To lastRowP
+            .Cells(i, "R").Formula = "=IFERROR(INDEX('Query Terceros'!$W:$W, MATCH(P" & i & ", 'Query Terceros'!$V:$V, 0)), ""No Match"")"
+        Next i
+    End With
+    
+    Application.CutCopyMode = False ' Clears the clipboard to clean up after paste operations
+
+    MsgBox "Macro completed successfully!", vbInformation, "Process Finished"
+End Sub
+
+
