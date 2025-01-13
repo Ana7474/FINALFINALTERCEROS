@@ -1,0 +1,11 @@
+' Add formula to subtract column C from column B in "CONCILIACIÓN TERCEROS"
+With wsConciliacionTerceros
+    ' Determine the last row with data in columns A, B, or C
+    Dim lastRowConciliacion As Long
+    lastRowConciliacion = .Cells(.Rows.Count, "A").End(xlUp).Row
+
+    ' Apply the subtraction formula in column D from row 4 to the last row
+    For i = 4 To lastRowConciliacion
+        .Cells(i, "D").Formula = "=B" & i & " - C" & i
+    Next i
+End With
