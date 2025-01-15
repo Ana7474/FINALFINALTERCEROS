@@ -1,0 +1,31 @@
+Sub CleanExcel()
+    Dim wsQueryTerceros As Worksheet
+    Dim wsIndevalOpics As Worksheet
+    Dim wsConciliacionTerceros As Worksheet
+
+    ' Reference the worksheets
+    Set wsQueryTerceros = ThisWorkbook.Sheets("Query Terceros")
+    Set wsIndevalOpics = ThisWorkbook.Sheets("Indeval vs OPICS")
+    Set wsConciliacionTerceros = ThisWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+
+    ' 1. Clean "Query Terceros" (erase all data from line 2 and below)
+    With wsQueryTerceros
+        .Rows("2:" & .Rows.Count).ClearContents ' Clear contents from row 2 down
+    End With
+
+    ' 2. Clean "Indeval vs OPICS" (reset the entire sheet, no data or formatting)
+    With wsIndevalOpics
+        .Cells.Clear ' Clear everything (data, formatting, etc.)
+    End With
+
+    ' 3. Clean "CONCILIACIÓN TERCEROS" (clean all data and format from row 4 down, remove filters)
+    With wsConciliacionTerceros
+        ' Remove all filters from the sheet
+        If .AutoFilterMode Then .AutoFilterMode = False
+        
+        ' Clear all data and formatting from row 4 and below
+        .Rows("4:" & .Rows.Count).Clear
+    End With
+
+    MsgBox "All sheets have been cleaned successfully!", vbInformation, "Cleanup Completed"
+End Sub
