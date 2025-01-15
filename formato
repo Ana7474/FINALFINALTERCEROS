@@ -1,0 +1,19 @@
+Sub FormattingMacro()
+    Dim wsConciliacionTerceros As Worksheet
+    Dim lastRow As Long
+
+    ' Reference the "CONCILIACIÓN TERCEROS" sheet
+    Set wsConciliacionTerceros = ThisWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+
+    ' Determine the last row with data in column A (or any column with consistent data)
+    lastRow = wsConciliacionTerceros.Cells(wsConciliacionTerceros.Rows.Count, "A").End(xlUp).Row
+
+    ' Apply thousand separators format to columns B, C, and D
+    With wsConciliacionTerceros
+        .Range("B4:B" & lastRow).NumberFormat = "#,##0.00" ' Format column B
+        .Range("C4:C" & lastRow).NumberFormat = "#,##0.00" ' Format column C
+        .Range("D4:D" & lastRow).NumberFormat = "#,##0.00" ' Format column D
+    End With
+
+    MsgBox "Columns B, C, and D have been formatted with thousand separators!", vbInformation, "Formatting Done"
+End Sub
