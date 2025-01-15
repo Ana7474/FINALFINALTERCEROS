@@ -1,0 +1,71 @@
+Sub FormattingMacro()
+    Dim wsConciliacionTerceros As Worksheet
+    Dim wsIndevalOpics As Worksheet
+    Dim lastRowConciliacion As Long
+    Dim lastRowIndevalOpics As Long
+    Dim rngColumnD As Range
+    Dim i As Long
+
+    ' Reference the "CONCILIACIÓN TERCEROS" sheet
+    Set wsConciliacionTerceros = ThisWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+    ' Reference the "Indeval vs OPICS" sheet
+    Set wsIndevalOpics = ThisWorkbook.Sheets("Indeval vs OPICS")
+
+    ' Add today's date in B1 of "CONCILIACIÓN TERCEROS"
+    wsConciliacionTerceros.Cells(1, "B").Value = Date ' Add today's date
+    wsConciliacionTerceros.Cells(1, "B").NumberFormat = "dd/mm/yyyy" ' Format the date
+
+    ' Determine the last row with data in "CONCILIACIÓN TERCEROS" (column A)
+    lastRowConciliacion = wsConciliacionTerceros.Cells(wsConciliacionTerceros.Rows.Count, "A").End(xlUp).Row
+
+    ' Apply Accounting format (without currency symbols) to columns B, C, and D
+    With wsConciliacionTerceros
+        .Range("B4:B" & lastRowConciliacion).NumberFormat = "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+        .Range("C4:C" & lastRowConciliacion).NumberFormat = "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+        .Range("D4:D" & lastRowConciliacion).NumberFormat = "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+
+        ' Add filters to the range A4:D4
+        .Range("A4:D4").AutoFilter
+    End With
+
+    ' Apply conditional formatting to column D in "CONCILIACIÓN TERCEROS"
+    Set rngColumnD = wsConciliacionTerceros.Range("D4:D" & lastRowConciliacion)
+    With rngColumnD.FormatConditions.Add(Type:=xlCellValue, Operator:=xlLess, Formula1:="0")
+        .Interior.Color = RGB(255, 199, 206) ' Light red fill
+        .Font.Color = RGB(156, 0, 6) ' Dark red font
+    End With
+
+    ' Apply striped row formatting (fill alternate rows with light grey)
+    For i = 5 To lastRowConciliacion Step 2 ' Start from row 5 and step by 2
+        wsConciliacionTerceros.Range("A" & i & ":D" & i).Interior.Color = RGB(220, 220, 220) ' Light grey fill
+    Next i
+
+    ' Determine the last row in "Indeval vs OPICS" (column A)
+    lastRowIndevalOpics = wsIndevalOpics.Cells(wsIndevalOpics.Rows.Count, "A").End(xlUp).Row
+
+    ' Copy formatting from column M to column N in "Indeval vs OPICS"
+    For i = 1 To lastRowIndevalOpics
+        wsIndevalOpics.Cells(i, "N").Interior.Color = wsIndevalOpics.Cells(i, "M").Interior.Color ' Copy cell fill color
+        wsIndevalOpics.Cells(i, "N").Font.Color = wsIndevalOpics.Cells(i, "M").Font.Color ' Copy font color
+        wsIndevalOpics.Cells(i, "N").Font.Bold = wsIndevalOpics.Cells(i, "M").Font.Bold ' Copy bold formatting
+        wsIndevalOpics.Cells(i, "N").HorizontalAlignment = wsIndevalOpics.Cells(i, "M").HorizontalAlignment ' Copy alignment
+        wsIndevalOpics.Cells(i, "N").VerticalAlignment = wsIndevalOpics.Cells(i, "M").VerticalAlignment ' Copy vertical alignment
+    Next i
+
+    ' Copy formatting from column D to column E in "Indeval vs OPICS"
+    For i = 1 To lastRowIndevalOpics
+        wsIndevalOpics.Cells(i, "E").Interior.Color = wsIndevalOpics.Cells(i, "D").Interior.Color ' Copy cell fill color
+        wsIndevalOpics.Cells(i, "E").Font.Color = wsIndevalOpics.Cells(i, "D").Font.Color ' Copy font color
+        wsIndevalOpics.Cells(i, "E").Font.Bold = wsIndevalOpics.Cells(i, "D").Font.Bold ' Copy bold formatting
+        wsIndevalOpics.Cells(i, "E").HorizontalAlignment = wsIndevalOpics.Cells(i, "D").HorizontalAlignment ' Copy alignment
+        wsIndevalOpics.Cells(i, "E").VerticalAlignment = wsIndevalOpics.Cells(i, "D").VerticalAlignment ' Copy vertical alignment
+    Next i
+
+    ' Write "SERIE" in E1 and "Posición OPICS" in N1
+    With wsIndevalOpics
+        .Cells(1, "E").Value = "SERIE" ' Write header in E1
+        .Cells(1, "N").Value = "Posición OPICS" ' Write header in N1
+    End With
+
+    MsgBox "Formatting applied to 'CONCILIACIÓN TERCEROS' and 'Indeval vs OPICS'!", vbInformation, "Formatting Done"
+End Sub
