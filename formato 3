@@ -1,0 +1,30 @@
+Sub FormattingMacro()
+    Dim wsConciliacionTerceros As Worksheet
+    Dim lastRow As Long
+    Dim rngColumnD As Range
+
+    ' Reference the "CONCILIACIÓN TERCEROS" sheet
+    Set wsConciliacionTerceros = ThisWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+
+    ' Determine the last row with data in column A (or any column with consistent data)
+    lastRow = wsConciliacionTerceros.Cells(wsConciliacionTerceros.Rows.Count, "A").End(xlUp).Row
+
+    ' Apply Accounting format (without currency symbols) to columns B, C, and D
+    With wsConciliacionTerceros
+        .Range("B4:B" & lastRow).NumberFormat = "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+        .Range("C4:C" & lastRow).NumberFormat = "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+        .Range("D4:D" & lastRow).NumberFormat = "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+
+        ' Add filters to the range A4:D4
+        .Range("A4:D4").AutoFilter
+    End With
+
+    ' Apply conditional formatting to column D
+    Set rngColumnD = wsConciliacionTerceros.Range("D4:D" & lastRow)
+    With rngColumnD.FormatConditions.Add(Type:=xlCellValue, Operator:=xlLess, Formula1:="0")
+        .Interior.Color = RGB(255, 199, 206) ' Light red fill
+        .Font.Color = RGB(156, 0, 6) ' Dark red font
+    End With
+
+    MsgBox "Formatting, filters, and conditional formatting applied to 'CONCILIACIÓN TERCEROS'!", vbInformation, "Formatting Done"
+End Sub
