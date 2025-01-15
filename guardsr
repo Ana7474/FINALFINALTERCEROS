@@ -1,0 +1,50 @@
+Sub SaveSheetToNewWorkbook()
+    Dim wsSource As Worksheet
+    Dim wbNew As Workbook
+    Dim wsNew As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim savePath As String
+    Dim folderPath As String
+
+    ' Set the source worksheet ("CONCILIACIÓN TERCEROS")
+    Set wsSource = ThisWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+    
+    ' Determine the last row and column with data in the source sheet
+    lastRow = wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row
+    lastCol = wsSource.Cells(3, wsSource.Columns.Count).End(xlToLeft).Column ' Assumes headers in row 3
+
+    ' Create a new workbook
+    Set wbNew = Application.Workbooks.Add
+    Set wsNew = wbNew.Sheets(1) ' Reference the first (default) sheet in the new workbook
+
+    ' Copy values and formats from the source sheet to the new sheet
+    With wsSource
+        ' Copy values
+        .Range(.Cells(1, 1), .Cells(lastRow, lastCol)).Copy
+        wsNew.Cells(1, 1).PasteSpecial Paste:=xlPasteValues ' Paste values only
+        wsNew.Cells(1, 1).PasteSpecial Paste:=xlPasteFormats ' Paste formats only
+        wsNew.Cells(1, 1).PasteSpecial Paste:=xlPasteColumnWidths ' Paste column widths
+    End With
+
+    ' Clear the clipboard to avoid leaving copied content
+    Application.CutCopyMode = False
+
+    ' Construct the folder path dynamically using Environ("USERPROFILE")
+    folderPath = Environ("USERPROFILE") & "\Santander Office 365\MARKETS OPERATIONS TEAM - RESPALDO 2023 (1)\4. LIQ MERCADO DE DINERO\Macro Tasas\01_Validación\VALIDACIÓN TERCEROS"
+
+    ' Construct the full save path, including file name
+    savePath = folderPath & "\Conciliacion_Terceros_" & Format(Date, "yyyy-mm-dd") & ".xlsx"
+
+    ' Attempt to save the file
+    On Error Resume Next ' Enable error handling in case the folder path is invalid
+    wbNew.SaveAs Filename:=savePath, FileFormat:=xlOpenXMLWorkbook
+    On Error GoTo 0 ' Disable error handling
+
+    ' Check if the file was successfully saved
+    If Dir(savePath) <> "" Then
+        MsgBox "The sheet 'CONCILIACIÓN TERCEROS' has been saved to a new workbook successfully!" & vbCrLf & "Saved at: " & savePath, vbInformation, "Export Complete"
+    Else
+        wbNew.Close SaveChanges:=False ' Close the new workbook without saving if there was an issue
+        MsgBox "The file could not be saved. Please check the folder path and try again.", vbExclamation, "Save Failed"
+    End If
+End Sub
