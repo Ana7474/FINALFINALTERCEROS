@@ -1,0 +1,19 @@
+Sub FormattingMacro()
+    Dim wsConciliacionTerceros As Worksheet
+    Dim lastRow As Long
+
+    ' Reference the "CONCILIACIÓN TERCEROS" sheet
+    Set wsConciliacionTerceros = ThisWorkbook.Sheets("CONCILIACIÓN TERCEROS")
+
+    ' Determine the last row with data in column A (or any column with consistent data)
+    lastRow = wsConciliacionTerceros.Cells(wsConciliacionTerceros.Rows.Count, "A").End(xlUp).Row
+
+    ' Apply Accounting format to columns B, C, and D
+    With wsConciliacionTerceros
+        .Range("B4:B" & lastRow).NumberFormat = "_($* #,##0.00_);_($* (#,##0.00);_($* ""-""??_);_(@_)" ' Column B
+        .Range("C4:C" & lastRow).NumberFormat = "_($* #,##0.00_);_($* (#,##0.00);_($* ""-""??_);_(@_)" ' Column C
+        .Range("D4:D" & lastRow).NumberFormat = "_($* #,##0.00_);_($* (#,##0.00);_($* ""-""??_);_(@_)" ' Column D
+    End With
+
+    MsgBox "Columns B, C, and D have been formatted using the Accounting format!", vbInformation, "Formatting Done"
+End Sub
